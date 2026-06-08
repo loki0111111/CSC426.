@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .calculator {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      width: 280px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .display {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      text-align: right;
+    }
+
+    .display .expr {
+      font-size: 12px;
+      color: #999;
+      min-height: 16px;
+    }
+
+    .display .main {
+      font-size: 32px;
+      color: #222;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      padding: 16px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      color: #222;
+    }
+
+    button:hover { background: #f5f5f5; }
+    button:active { background: #e8e8e8; }
+
+    button.op { background: #f0f4ff; color: #2255cc; }
+    button.op:hover { background: #e0e8ff; }
+
+    button.clear { background: #fff0f0; color: #cc2222; }
+    button.clear:hover { background: #ffe0e0; }
+
+    button.equals { background: #222; color: #fff; }
+    button.equals:hover { background: #444; }
+  </style>
+</head>
+<body>
+
+<div class="calculator">
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="main" id="main">0</div>
+  </div>
+
+  <div class="grid">
+    <button class="clear" onclick="press('C')">C</button>
+    <button class="op"    onclick="press('^')">x^y</button>
+    <button class="op"    onclick="press('%')">%</button>
+    <button class="op"    onclick="press('/')">÷</button>
+
+    <button onclick="press('7')">7</button>
+    <button onclick="press('8')">8</button>
+    <button onclick="press('9')">9</button>
+    <button class="op" onclick="press('*')">×</button>
+
+    <button onclick="press('4')">4</button>
+    <button onclick="press('5')">5</button>
+    <button onclick="press('6')">6</button>
+    <button class="op" onclick="press('-')">−</button>
+
+    <button onclick="press('1')">1</button>
+    <button onclick="press('2')">2</button>
+    <button onclick="press('3')">3</button>
+    <button class="op" onclick="press('+')">+</button>
+
+    <button onclick="press('\\')">\\</button>
+    <button onclick="press('0')">0</button>
+    <button onclick="press('.')">.</button>
+    <button class="equals" onclick="press('=')">=</button>
+  </div>
+</div>
+
+<script>
+  let current = '0';
+  let expression = '';
+  let justEvaled = false;
+
+  const mainEl = document.getElementById('main');
+  const exprEl = document.getElementById('expr');
+
+  function updateDisplay() {
+    mainEl.textContent = current;
+    exprEl.textContent = expression;
+  }
+
+  function press(key) {
+    if (key === 'C') {
+      current = '0'; expression = ''; justEvaled = false;
+      updateDisplay(); return;
+    }
+
+    const ops = ['+', '-', '*', '/', '^', '%', '\\'];
+
+    if (key === '=') {
+      if (!expression) return;
+      const full = expression + current;
+      exprEl.textContent = full + ' =';
+      try {
+        let expr = full
+          .replace(/\^/g, '**')
+          .replace(/(\d+(?:\.\d+)?)\s*\\\s*(\d+(?:\.\d+)?)/g, (_, a, b) => Math.trunc(Number(a) / Number(b)));
+        let result = Function('"use strict"; return (' + expr + ')')();
+        result = parseFloat(result.toPrecision(12));
+        current = String(result);
+        expression = '';
+        justEvaled = true;
+      } catch {
+        current = 'Error'; expression = '';
+      }
+      mainEl.textContent = current; return;
+    }
+
+    if (ops.includes(key)) {
+      justEvaled = false;
+      expression = expression + current + ' ' + key + ' ';
+      current = '0';
+      updateDisplay(); return;
+    }
+
+    if (justEvaled) { current = '0'; justEvaled = false; }
+
+    if (key === '.') {
+      if (current.includes('.')) return;
+      current += '.';
+    } else {
+      current = current === '0' ? key : current + key;
+    }
+
+    if (current.length > 15) return;
+    updateDisplay();
+  }
+
+  document.addEventListener('keydown', e => {
+    const map = { 'Enter': '=', 'Escape': 'C', '+': '+', '-': '-', '*': '*', '/': '/', '^': '^', '%': '%', '\\': '\\' };
+    if (map[e.key]) { press(map[e.key]); return; }
+    if (/^[0-9.]$/.test(e.key)) press(e.key);
+  });
+</script>
+</body>
+</html>
